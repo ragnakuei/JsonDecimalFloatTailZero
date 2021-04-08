@@ -1,37 +1,35 @@
-﻿using JsonDecimalFloatTailZero.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace JsonDecimalFloatTailZero.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
-
+        [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
 
-        public IActionResult Privacy()
+        [HttpPost, Route("api/[Controller]")]
+        public IActionResult Post([FromBody]TestViewModel vm)
         {
-            return View();
+            return Ok(vm);
         }
+    }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+    public class TestViewModel
+    {
+        public TestDto Dto { get; set; }
+    }
+
+    public class TestDto
+    {
+        public decimal? MeasureValue { get; set; }
     }
 }

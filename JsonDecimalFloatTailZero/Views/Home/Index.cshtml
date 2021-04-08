@@ -1,8 +1,220 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    Layout = null;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div id="app"
+     style="display: none">
+    <form autocomplete="off"
+          class="text-center"
+          v-on:submit.prevent="Submit()">
+        <label>{{vm.Dto.MeasureValue}}</label>
+        <br>
+        <custom-input v-model:value="vm.Dto.MeasureValue"></custom-input>
+        <input type="submit"
+               value="Submit" />
+    </form>
 </div>
+
+<script src="/lib/jquery/jquery-1.12.4.js"
+            asp-append-version="true"></script>
+<script>
+    @* 將 CustomRequest 設計為狀態不共用 *@
+    window.CustomRequest = function(option)
+    {
+        const self = this;
+
+        @* 下面是 Properties *@
+
+        @* 傳入參數需要的 Properties：
+           - RequireFullScreenLoading
+           - Url
+           - RequestBody
+           - SuccessCallback
+           - ErrorCallback(Optional)
+           - CompleteCallback(Optional)
+        *@
+        self.Option = option;
+
+        @* FullScreen Loading 功能 *@
+        if (option.RequireFullScreenLoading)
+        {
+            self.FullScreenLoading = new CustomFullScreenLoading();
+        }
+
+        @* 用來防止多次觸發
+           已有 request 正在處理中 => true
+           沒有 request 正在處理中 => false
+           僅限於同一功能，無法跨功能支援 !
+        *@
+        self.Waiting = false;
+
+        @* 下面是 Functions *@
+
+        self.PostJson = function()
+        {
+            // console.log(self.Option.ErrorCallback);
+            // console.log(self.Option.RequestBody);
+
+            try
+            {
+                if (self.Waiting)
+                {
+                    console.log('已有 request 正在等待回應中');
+                    return;
+                }
+
+                self.Waiting = true;
+
+                console.log(self.Option.RequestBody);
+
+                $.ajax(
+                {
+                    url: self.Option.Url,
+                    type: 'post',
+                    data: JSON.stringify(self.Option.RequestBody),
+                    dataType: 'json',
+                    contentType: 'application/json',
+
+                    // dataType: jQueryParameter.DataType,
+                    // contentType: jQueryParameter.ContentType,
+                }).done(function(e)
+                {
+                   self.Option.SuccessCallback(e);
+                }).fail(function (e)
+                {
+                    self.Waiting = false;
+
+                    self.PostRequestError(e);
+
+                    if (self.Option.ErrorCallback)
+                    {
+                        self.Option.ErrorCallback(e.responseJSON);
+                    }
+                }).always(function (e)
+                {
+                    self.Waiting = false;
+
+                    if (self.Option.CompleteCallback)
+                    {
+                        self.Option.CompleteCallback(e);
+                    }
+
+                    if (self.FullScreenLoading)
+                    {
+                        self.FullScreenLoading.Close();
+                    }
+                });
+            }
+            catch (e)
+            {
+                 alert('發生錯誤，請聯絡開發人員 !');
+                 console.log(e);
+
+                 self.Waiting = false;
+            }
+        }
+
+
+        self.PostRequestError = function(jqXHR, textStatus, errorThrown)
+        {
+            // console.log(jqXHR);
+            // console.log(textStatus);
+            // console.log(errorThrown);
+            console.log(jqXHR.responseJSON);
+
+            if (jqXHR.responseJSON
+            && jqXHR.responseJSON.Message)
+            {
+                alert(jqXHR.responseJSON.Message);
+            }
+            else
+            {
+                alert('發生錯誤，請聯絡開發人員');
+            }
+
+            // console.log(self);
+        }
+    };
+</script>
+
+
+
+<script src="/lib/vue/vue.global.prod.js"></script>
+<script>
+  const { createApp, ref, reactive, onMounted, computed } = Vue;
+
+  const app = createApp({
+    setup(){
+
+      const submitUrl = '@(Url.Action("Post"))';
+
+      const vm = reactive({
+            Dto : {
+                MeasureValue : 1.000000
+            }
+      });
+
+       const customRequest = {};
+       customRequest.Url = submitUrl;
+       customRequest.RequestBody = vm;
+       customRequest.SuccessCallback = function(e)
+       {
+           console.log(e);
+
+           vm.Dto = e.Dto;
+       };
+       customRequest.Request = new CustomRequest(customRequest);
+
+      const Submit = function()
+      {
+          customRequest.Request.PostJson();
+      }
+
+      return {
+        vm,
+        Submit
+      }
+    }
+  });
+
+  app.component("custom-input", {
+    props: {
+      value: String,
+    },
+    setup(props, { emit }){
+
+      onMounted(() => {
+
+      });
+
+      const displayvalue = computed({
+        get : () => {
+
+          console.log('get');
+
+          return props.value;
+        },
+        set : (v) => {
+
+          console.log('set:' + v);
+
+          emit('update:value', v);
+        },
+      });
+
+      return {
+        displayvalue,
+      }
+    },
+    template: `
+<input type="number" v-model="displayvalue" />
+`,
+  });
+
+  const vm = app.mount('#app');
+
+  window.addEventListener('DOMContentLoaded', (event) => {
+    document.getElementById("app").style.display = "block";
+  });
+
+</script>
