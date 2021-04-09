@@ -19,6 +19,8 @@ namespace JsonDecimalFloatTailZero.Controllers
         [HttpPost, Route("api/[Controller]")]
         public IActionResult Post([FromBody]TestViewModel vm)
         {
+            vm.Dto.MeasureValue *= 1.0m;
+
             return Ok(vm);
         }
     }
@@ -30,6 +32,27 @@ namespace JsonDecimalFloatTailZero.Controllers
 
     public class TestDto
     {
+        [JsonConverter(typeof(StringNullableDecimalJsonConverter))]
         public decimal? MeasureValue { get; set; }
+    }
+
+    public class StringNullableDecimalJsonConverter : JsonConverter<decimal?>
+    {
+        public override decimal? Read(ref Utf8JsonReader    reader,
+                                      Type                  typeToConvert,
+                                      JsonSerializerOptions options)
+        {
+            if (Decimal.TryParse(reader.GetString(), out var result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
+        public override void Write(Utf8JsonWriter        writer,
+                                   decimal?              nullableDecimal,
+                                   JsonSerializerOptions options) =>
+            writer.WriteStringValue(nullableDecimal.ToString());
     }
 }
