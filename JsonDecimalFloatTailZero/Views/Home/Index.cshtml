@@ -9,7 +9,7 @@
           v-on:submit.prevent="Submit()">
         <label>{{vm.Dto.MeasureValue}}</label>
         <br>
-        <custom-input v-model:value="vm.Dto.MeasureValue"></custom-input>
+        <input type="number" v-model="vm.Dto.MeasureValue" />
         <input type="submit"
                value="Submit" />
     </form>
@@ -56,40 +56,6 @@
         Submit
       }
     }
-  });
-
-  app.component("custom-input", {
-    props: {
-      value: String,
-    },
-    setup(props, { emit }){
-
-      onMounted(() => {
-
-      });
-
-      const displayvalue = computed({
-        get : () => {
-
-          console.log('get');
-
-          return props.value;
-        },
-        set : (v) => {
-
-          console.log('set:' + v);
-
-          emit('update:value', v);
-        },
-      });
-
-      return {
-        displayvalue,
-      }
-    },
-    template: `
-<input type="number" v-model="displayvalue" />
-`,
   });
 
   const vm = app.mount('#app');
